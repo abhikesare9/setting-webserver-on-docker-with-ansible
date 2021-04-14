@@ -1,0 +1,57 @@
+- hosts: all
+  tasks:
+
+    - name: "Adding docker repository for docker configuration"
+      yum_repository:
+        file: "docker.repo"
+        baseurl: "https://download.docker.com/linux/centos/7/x86_64/stable"
+        name: docker
+        gpgcheck: no
+        description: "docker repository"
+
+    - name: "docker installation"
+      command: "yum install docker-ce --nobest -y"
+        
+    - name: "starting docker service"
+      service:
+        name: "docker"
+        state: started
+        enabled: yes
+    
+    - name: "installing docker sdk"
+      command: "pip3 install docker-py"
+    
+    - name: "pull docker httpd image"
+      docker_image: 
+        name: "httpd"
+        source: pull
+
+    - name: "disable the firewall"
+      service: 
+        name: firewalld
+        state: stopped
+
+    - name: "creating folder"
+      file:
+        path: "/webserver"
+        state: directory
+
+    - name: "copy webpages"  
+      copy:
+        src: "index.html"
+        dest: "/webserver/"
+
+    - name: "starting docker container"
+      docker_container:
+        name: "mywebserver"
+        image: "httpd"
+        state: started
+        detach: yes 
+        exposed_ports:
+          - "80"
+        ports:
+        -  "8081:80"
+        volumes:
+           - /webserver:/usr/local/apache2/htdocs/  #docker run -dit --name my-running-app -p 8080:80 my-apache2
+    
+    
